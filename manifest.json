@@ -1,0 +1,37 @@
+{
+    "manifest_version": 3,
+    "name": "ChessHelper",
+    "short_name": "ChessHelper",
+    "version": "1.0.0",
+    "description": "Help you with chess",
+    "content_scripts": [
+      {
+        "js": [
+          "content.js"
+        ],
+        "css": [],
+        "matches": [
+          "https://www.chess.com/*"
+        ],
+        "run_at": "document_start"
+      }
+    ],
+    "action": {
+      "default_popup": "options.html"
+    },
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "pieces.json"
+        ],
+        "matches": [
+          "https://www.chess.com/*"
+        ]
+      }
+    ],
+    "permissions": [
+      "tabs",
+      "storage"
+    ]
+  }
+  

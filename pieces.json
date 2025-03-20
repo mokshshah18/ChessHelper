@@ -1,0 +1,37 @@
+{
+    "pieces": [
+      { "type": "br", "square": "88" },
+      { "type": "bn", "square": "78" },
+      { "type": "bb", "square": "68" },
+      { "type": "bk", "square": "58" },
+      { "type": "bq", "square": "48" },
+      { "type": "bb", "square": "38" },
+      { "type": "bn", "square": "28" },
+      { "type": "br", "square": "18" },
+      { "type": "bp", "square": "87" },
+      { "type": "bp", "square": "77" },
+      { "type": "bp", "square": "67" },
+      { "type": "bp", "square": "57" },
+      { "type": "bp", "square": "47" },
+      { "type": "bp", "square": "37" },
+      { "type": "bp", "square": "27" },
+      { "type": "bp", "square": "17" },
+      { "type": "wp", "square": "82" },
+      { "type": "wp", "square": "72" },
+      { "type": "wp", "square": "62" },
+      { "type": "wp", "square": "52" },
+      { "type": "wp", "square": "42" },
+      { "type": "wp", "square": "32" },
+      { "type": "wp", "square": "22" },
+      { "type": "wp", "square": "12" },
+      { "type": "wr", "square": "81" },
+      { "type": "wn", "square": "71" },
+      { "type": "wb", "square": "61" },
+      { "type": "wk", "square": "51" },
+      { "type": "wq", "square": "41" },
+      { "type": "wb", "square": "31" },
+      { "type": "wn", "square": "21" },
+      { "type": "wr", "square": "11" }
+    ]
+  }
+  
