@@ -1,3 +1,6 @@
+// Add position tracking variable at the top
+let previousPositions = {};
+
 function checkAllPieces(pieces) {
   let missingPieces = [];
   let remainingPieces = {};
@@ -23,7 +26,7 @@ function checkAllPieces(pieces) {
       '[class*="chess-piece"]'
   ].join(',')));
 
-  console.log(`Found ${pieceElements.length} piece elements`);
+  // console.log(`Found ${pieceElements.length} piece elements`);
   
   pieceElements.forEach(element => {
       let pieceType = null;
@@ -95,13 +98,13 @@ function checkAllPieces(pieces) {
           }
           remainingPieces[pieceType].push(square || 'unknown');
           
-          console.log(`Found ${pieceType} on square ${square || 'unknown'}`);
+          // console.log(`Found ${pieceType} on square ${square || 'unknown'}`);
       }
   });
   
-  console.log('Expected counts:', expectedPieceCounts);
-  console.log('Actual counts:', actualPieceCounts);
-  console.log('Remaining pieces and their positions:', remainingPieces);
+  // console.log('Expected counts:', expectedPieceCounts);
+  // console.log('Actual counts:', actualPieceCounts);
+  // console.log('Remaining pieces and their positions:', remainingPieces);
   
   // Check if we have all the expected pieces
   for (const [pieceType, expectedCount] of Object.entries(expectedPieceCounts)) {
@@ -113,15 +116,17 @@ function checkAllPieces(pieces) {
       }
   }
   
-  // Log results
+  // Before returning, check if positions changed
+  const positionsChanged = JSON.stringify(previousPositions) !== JSON.stringify(remainingPieces);
+  if (positionsChanged) {
+    console.log("Remaining piece positions:", remainingPieces);
+    previousPositions = JSON.parse(JSON.stringify(remainingPieces)); // Deep copy
+  }
+  
   if (missingPieces.length === 0) {
-      console.log("All expected pieces are present on the board");
-      console.log("Piece positions:", remainingPieces);
-      return true;
+    return true;
   } else {
-      console.log("Missing pieces:", missingPieces);
-      console.log("Remaining piece positions:", remainingPieces);
-      return false;
+    return false;
   }
 }
 
@@ -132,7 +137,7 @@ function initChessPieceChecker() {
       .then(data => {
           // Initial check
           const result = checkAllPieces(data.pieces);
-          console.log(`Initial check: ${result ? 'All pieces present' : 'Some pieces missing'}`);
+          // console.log(`Initial check: ${result ? 'All pieces present' : 'Some pieces missing'}`);
           
           // Setup observer for changes
           const observer = new MutationObserver((mutations) => {
@@ -148,9 +153,9 @@ function initChessPieceChecker() {
               });
 
               if (relevantMutation) {
-                  console.log('Detected board change');
+                  // console.log('Detected board change');
                   const result = checkAllPieces(data.pieces);
-                  console.log(`Check after change: ${result ? 'All pieces present' : 'Some pieces missing'}`);
+                  // console.log(`Check after change: ${result ? 'All pieces present' : 'Some pieces missing'}`);
               }
           });
           
@@ -172,7 +177,7 @@ function initChessPieceChecker() {
               ].filter(Boolean); // Remove null elements
 
               if (possibleContainers.length > 0) {
-                  console.log(`Found ${possibleContainers.length} possible board containers`);
+                  // console.log(`Found ${possibleContainers.length} possible board containers`);
                   possibleContainers.forEach(container => {
                       observer.observe(container, {
                           childList: true,
@@ -181,7 +186,7 @@ function initChessPieceChecker() {
                           attributeFilter: ['class', 'data-piece'],
                           characterData: true
                       });
-                      console.log('Observing container:', container);
+                      // console.log('Observing container:', container);
                   });
                   return true;
               }
@@ -190,12 +195,12 @@ function initChessPieceChecker() {
 
           // Try to start observing, retry if failed
           if (!startObserving()) {
-              console.log('Board not found initially, waiting to retry...');
+              // console.log('Board not found initially, waiting to retry...');
               // Retry a few times with increasing delays
               [500, 1000, 2000, 5000].forEach(delay => {
                   setTimeout(() => {
                       if (startObserving()) {
-                          console.log(`Successfully started observer after ${delay}ms`);
+                          // console.log(`Successfully started observer after ${delay}ms`);
                       }
                   }, delay);
               });
@@ -222,7 +227,7 @@ new MutationObserver(() => {
     const url = location.href;
     if (url !== lastUrl) {
         lastUrl = url;
-        console.log('URL changed, reinitializing...');
+        // console.log('URL changed, reinitializing...');
         initChessPieceChecker();
     }
 }).observe(document, { subtree: true, childList: true });
