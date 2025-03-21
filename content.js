@@ -1,5 +1,6 @@
 function checkAllPieces(pieces) {
   let missingPieces = [];
+  let remainingPieces = {};
   
   // Count how many of each piece type we expect
   let expectedPieceCounts = {};
@@ -26,6 +27,7 @@ function checkAllPieces(pieces) {
   
   pieceElements.forEach(element => {
       let pieceType = null;
+      let square = null;
       
       // 1. Try data-piece attribute (new chess.com format)
       const dataPiece = element.getAttribute('data-piece');
@@ -49,31 +51,76 @@ function checkAllPieces(pieces) {
               }
           }
       }
-      
+
+      // Get square position
       if (pieceType) {
+          // Try different methods to get the square
+          // 1. Try data-square attribute
+          square = element.getAttribute('data-square');
+          
+          // 2. Try square class
+          if (!square) {
+              const squareClass = Array.from(element.classList).find(cls => /square-[a-h][1-8]/.test(cls));
+              if (squareClass) {
+                  square = squareClass.replace('square-', '');
+              }
+          }
+          
+          // 3. Try parent element's data-square
+          if (!square && element.parentElement) {
+              square = element.parentElement.getAttribute('data-square');
+          }
+          
+          // 4. Try coordinate calculation from position
+          if (!square) {
+              const board = document.querySelector('.board');
+              if (board && element.getBoundingClientRect) {
+                  const boardRect = board.getBoundingClientRect();
+                  const pieceRect = element.getBoundingClientRect();
+                  const relX = pieceRect.left - boardRect.left;
+                  const relY = boardRect.bottom - pieceRect.bottom;
+                  const file = String.fromCharCode(97 + Math.floor((8 * relX) / boardRect.width));
+                  const rank = 1 + Math.floor((8 * relY) / boardRect.height);
+                  if (file >= 'a' && file <= 'h' && rank >= 1 && rank <= 8) {
+                      square = file + rank;
+                  }
+              }
+          }
+
           actualPieceCounts[pieceType] = (actualPieceCounts[pieceType] || 0) + 1;
-          console.log(`Found piece: ${pieceType}`);
+          
+          // Store the piece and its position
+          if (!remainingPieces[pieceType]) {
+              remainingPieces[pieceType] = [];
+          }
+          remainingPieces[pieceType].push(square || 'unknown');
+          
+          console.log(`Found ${pieceType} on square ${square || 'unknown'}`);
       }
   });
   
   console.log('Expected counts:', expectedPieceCounts);
   console.log('Actual counts:', actualPieceCounts);
+  console.log('Remaining pieces and their positions:', remainingPieces);
   
   // Check if we have all the expected pieces
   for (const [pieceType, expectedCount] of Object.entries(expectedPieceCounts)) {
       const actualCount = actualPieceCounts[pieceType] || 0;
       
       if (actualCount < expectedCount) {
-          missingPieces.push(`${pieceType}: missing ${expectedCount - actualCount} of ${expectedCount}`);
+          const remaining = remainingPieces[pieceType] || [];
+          missingPieces.push(`${pieceType}: missing ${expectedCount - actualCount} of ${expectedCount}. Remaining on squares: ${remaining.join(', ')}`);
       }
   }
   
   // Log results
   if (missingPieces.length === 0) {
       console.log("All expected pieces are present on the board");
+      console.log("Piece positions:", remainingPieces);
       return true;
   } else {
       console.log("Missing pieces:", missingPieces);
+      console.log("Remaining piece positions:", remainingPieces);
       return false;
   }
 }
