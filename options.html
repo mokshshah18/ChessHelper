@@ -1,2 +1,59 @@
-<h1>Chess aid</h1>
-Toggle enemy pieces possibilities.
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chess Helper Options</title>
+    <style>
+        body {
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        .option-group {
+            margin-bottom: 20px;
+        }
+        .checkbox-group {
+            margin: 10px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .save-status {
+            color: green;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chess Helper Options</h1>
+    
+    <div class="option-group">
+        <h3>Show Attack Squares For:</h3>
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" name="pieceColor" value="white"> White Pieces
+            </label>
+            <label>
+                <input type="checkbox" name="pieceColor" value="black"> Black Pieces
+            </label>
+        </div>
+    </div>
+
+    <div class="option-group">
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" id="debugMode"> Enable Debug Mode (Show Console Logs)
+            </label>
+        </div>
+    </div>
+
+    <button id="save">Save Settings</button>
+    <div id="saveStatus" class="save-status">Settings saved!</div>
+
+    <script src="options.js"></script>
+</body>
+</html>
