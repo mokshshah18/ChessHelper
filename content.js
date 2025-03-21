@@ -1,56 +1,181 @@
-// Function to check if all pieces are present
-    function checkAllPieces(pieces) {
-        let missingPieces = [];
-
-        pieces.forEach(piece => {
-            // Use a regex to check for any square-0 to square-100 class
-            const div = document.querySelector(`.piece.${piece.type}[class*="square-"]`);
-
-            if (div) {
-                // Check if it actually has a square between 0 and 100
-                const classList = Array.from(div.classList);
-                const hasValidSquare = classList.some(cls => {
-                    const match = cls.match(/^square-(\d+)$/);
-                    return match && parseInt(match[1]) >= 0 && parseInt(match[1]) <= 100;
-                });
-
-                if (!hasValidSquare) {
-                    missingPieces.push(`${piece.type} does not have a valid square (0-100)`);
-                }
-            } else {
-                missingPieces.push(`${piece.type} is missing entirely`);
-            }
-        });
-
-        if (missingPieces.length === 0) {
-            console.log("All pieces found with valid squares");
-        } else {
-            console.log("Missing pieces:", missingPieces.join(", "));
-        }
-    }
-
+function checkAllPieces(pieces) {
+  let missingPieces = [];
   
-  // Fetch the pieces data from the JSON file
+  // Count how many of each piece type we expect
+  let expectedPieceCounts = {};
+  pieces.forEach(piece => {
+      expectedPieceCounts[piece.type] = (expectedPieceCounts[piece.type] || 0) + 1;
+  });
+  
+  // Count how many of each piece type we actually have on the board
+  let actualPieceCounts = {};
+  
+  // Try multiple selectors to find pieces
+  const pieceElements = Array.from(document.querySelectorAll([
+      // New chess.com selectors
+      'div[data-piece]',
+      'div.piece',
+      // Piece squares
+      '.piece-square',
+      // Backup selectors
+      '[class*="piece_"]',
+      '[class*="chess-piece"]'
+  ].join(',')));
+
+  console.log(`Found ${pieceElements.length} piece elements`);
+  
+  pieceElements.forEach(element => {
+      let pieceType = null;
+      
+      // 1. Try data-piece attribute (new chess.com format)
+      const dataPiece = element.getAttribute('data-piece');
+      if (dataPiece) {
+          const [color, piece] = dataPiece.split('-');
+          pieceType = (color === 'white' ? 'w' : 'b') + piece[0].toLowerCase();
+      }
+      
+      // 2. Try class-based detection
+      if (!pieceType) {
+          const classList = Array.from(element.classList);
+          // Check for standard piece classes
+          const standardPiece = classList.find(cls => /^[wb][prnbqk]$/.test(cls));
+          if (standardPiece) {
+              pieceType = standardPiece;
+          } else {
+              // Check for new format classes
+              const newFormatPiece = classList.find(cls => /piece_[wb][prnbqk]/.test(cls));
+              if (newFormatPiece) {
+                  pieceType = newFormatPiece.replace('piece_', '');
+              }
+          }
+      }
+      
+      if (pieceType) {
+          actualPieceCounts[pieceType] = (actualPieceCounts[pieceType] || 0) + 1;
+          console.log(`Found piece: ${pieceType}`);
+      }
+  });
+  
+  console.log('Expected counts:', expectedPieceCounts);
+  console.log('Actual counts:', actualPieceCounts);
+  
+  // Check if we have all the expected pieces
+  for (const [pieceType, expectedCount] of Object.entries(expectedPieceCounts)) {
+      const actualCount = actualPieceCounts[pieceType] || 0;
+      
+      if (actualCount < expectedCount) {
+          missingPieces.push(`${pieceType}: missing ${expectedCount - actualCount} of ${expectedCount}`);
+      }
+  }
+  
+  // Log results
+  if (missingPieces.length === 0) {
+      console.log("All expected pieces are present on the board");
+      return true;
+  } else {
+      console.log("Missing pieces:", missingPieces);
+      return false;
+  }
+}
+
+// Fetch and observe changes
+function initChessPieceChecker() {
   fetch(chrome.runtime.getURL('pieces.json'))
-    .then(response => response.json())
-    .then(data => {
-      // Call the function to check for the pieces when the page is loaded
-      document.addEventListener("DOMContentLoaded", () => {
-        checkAllPieces(data.pieces);
-        
-        // Use MutationObserver to keep checking if pieces change
-        const observer = new MutationObserver(() => {
-            checkAllPieces(data.pieces); // Re-check the pieces on the page when the DOM changes
-        });
-  
-        // Start observing the DOM for changes (child elements and subtree)
-        observer.observe(document.body, {
-          childList: true,  // Observe added/removed child elements
-          subtree: true     // Observe all descendants of the body
-        });
-      });
-    })
-    .catch(error => {
-      console.error("Error loading pieces data:", error);
-    });
-  
+      .then(response => response.json())
+      .then(data => {
+          // Initial check
+          const result = checkAllPieces(data.pieces);
+          console.log(`Initial check: ${result ? 'All pieces present' : 'Some pieces missing'}`);
+          
+          // Setup observer for changes
+          const observer = new MutationObserver((mutations) => {
+              // Check if any relevant mutations occurred
+              const relevantMutation = mutations.some(mutation => {
+                  return (
+                      mutation.type === 'childList' ||
+                      (mutation.type === 'attributes' && 
+                       (mutation.attributeName === 'class' || 
+                        mutation.attributeName === 'data-piece')) ||
+                      mutation.type === 'characterData'
+                  );
+              });
+
+              if (relevantMutation) {
+                  console.log('Detected board change');
+                  const result = checkAllPieces(data.pieces);
+                  console.log(`Check after change: ${result ? 'All pieces present' : 'Some pieces missing'}`);
+              }
+          });
+          
+          // Find and observe the chess board and its container
+          function startObserving() {
+              const possibleContainers = [
+                  // Main board container
+                  document.querySelector('.board-layout-main'),
+                  document.querySelector('.board'),
+                  document.querySelector('.board-container'),
+                  // Game area
+                  document.querySelector('.game-board'),
+                  document.querySelector('.board-player'),
+                  // Specific chess.com elements
+                  document.querySelector('chess-board'),
+                  document.querySelector('wc-chess-board'),
+                  // Fallback
+                  document.querySelector('[class*="board"]')
+              ].filter(Boolean); // Remove null elements
+
+              if (possibleContainers.length > 0) {
+                  console.log(`Found ${possibleContainers.length} possible board containers`);
+                  possibleContainers.forEach(container => {
+                      observer.observe(container, {
+                          childList: true,
+                          subtree: true,
+                          attributes: true,
+                          attributeFilter: ['class', 'data-piece'],
+                          characterData: true
+                      });
+                      console.log('Observing container:', container);
+                  });
+                  return true;
+              }
+              return false;
+          }
+
+          // Try to start observing, retry if failed
+          if (!startObserving()) {
+              console.log('Board not found initially, waiting to retry...');
+              // Retry a few times with increasing delays
+              [500, 1000, 2000, 5000].forEach(delay => {
+                  setTimeout(() => {
+                      if (startObserving()) {
+                          console.log(`Successfully started observer after ${delay}ms`);
+                      }
+                  }, delay);
+              });
+          }
+      })
+      .catch(error => console.error("Error loading pieces data:", error));
+}
+
+// Run on page load and retry if board is not immediately available
+function tryInit() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChessPieceChecker);
+    } else {
+        initChessPieceChecker();
+    }
+}
+
+// Initial load
+tryInit();
+
+// Also try when URL changes (for single-page app navigation)
+let lastUrl = location.href;
+new MutationObserver(() => {
+    const url = location.href;
+    if (url !== lastUrl) {
+        lastUrl = url;
+        console.log('URL changed, reinitializing...');
+        initChessPieceChecker();
+    }
+}).observe(document, { subtree: true, childList: true });
